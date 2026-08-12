@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-bili-50 text-bili-800 antialiased;
+  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+@layer components {
+  .video-card {
+    @apply bg-white rounded-lg overflow-hidden cursor-pointer transition-all duration-200;
+  }
+  .video-card:hover {
+    @apply shadow-card-hover -translate-y-0.5;
+  }
+  .cover-overlay {
+    @apply absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/60 opacity-0 transition-opacity;
+  }
+  .video-card:hover .cover-overlay { @apply opacity-100; }
+  .duration-badge {
+    @apply absolute bottom-2 right-2 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded;
+  }
+  .nav-tab {
+    @apply px-4 py-2 text-bili-500 hover:text-bili-blue transition-colors cursor-pointer whitespace-nowrap;
+  }
+  .nav-tab.active {
+    @apply text-bili-blue font-medium relative;
+  }
+  .nav-tab.active::after {
+    content: '';
+    @apply absolute -bottom-px left-1/2 -translate-x-1/2 w-6 h-0.5 bg-bili-blue rounded-full;
+  }
+  .video-grid {
+    @apply grid gap-4;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  }
+  @media (max-width: 640px) {
+    .video-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+}
+
+.shadow-card-hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
