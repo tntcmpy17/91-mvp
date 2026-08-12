@@ -195,12 +195,45 @@ fetch_source() {
       fi
       ;;
     3)
-      if [ -f "./docker-compose.yml" ] && [ -d "./backend" ]; then
+      # 检查当前目录是否为 91-mvp 项目
+      # 关键特征文件：docker-compose.yml + backend/ + package.json
+      if [ -f "./docker-compose.yml" ] && [ -d "./backend" ] && [ -f "./package.json" ]; then
         COPY_FROM="$(pwd)"
         SOURCE_FILE="local"
       else
-        err "当前目录不是 91-mvp 项目（缺少 docker-compose.yml 或 backend/）"
-        exit 1
+        # 尝试自动定位：脚本所在目录的父目录/同级
+        # 优先用 $0（执行时的脚本路径），兜底用 BASH_SOURCE
+        local _script="${0:-${BASH_SOURCE[0]}}"
+        local SCRIPT_DIR
+        if [ -n "$_script" ] && [ -f "$_script" ]; then
+          SCRIPT_DIR="$(cd "$(dirname "$_script")" && pwd)"
+        else
+          SCRIPT_DIR="$(pwd)"
+        fi
+
+        for cand in \
+          "$SCRIPT_DIR" \
+          "$SCRIPT_DIR/91-mvp" \
+          "$(dirname "$SCRIPT_DIR")/91-mvp" \
+          "$SCRIPT_DIR/.."; do
+          if [ -f "$cand/docker-compose.yml" ] && [ -d "$cand/backend" ] && [ -f "$cand/package.json" ]; then
+            warn "在 $cand 找到了项目，自动切换到该目录"
+            COPY_FROM="$cand"
+            SOURCE_FILE="local"
+            cd "$cand"
+            break
+          fi
+        done
+
+        if [ -z "${COPY_FROM:-}" ]; then
+          err "当前目录不是 91-mvp 项目（缺少 docker-compose.yml 或 backend/）"
+          err "脚本所在目录: $SCRIPT_DIR"
+          err "当前目录: $(pwd)"
+          err "请确认："
+          err "  1) cd 进入 91-mvp 项目目录后再运行 install.sh"
+          err "  2) 或者选 1/2 重新拉取代码"
+          exit 1
+        fi
       fi
       ;;
     *)
