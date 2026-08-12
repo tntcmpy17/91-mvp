@@ -1,0 +1,29 @@
+[Unit]
+Description=91 Video Site MVP
+After=network.target
+
+[Service]
+Type=simple
+User=video91
+Group=video91
+WorkingDirectory=/opt/video-site-91
+ExecStart=/opt/video-site-91/server -addr :9191 -data /var/lib/video-site-91 -dist /opt/video-site-91/dist
+Restart=on-failure
+RestartSec=5s
+LimitNOFILE=65535
+StandardOutput=append:/var/log/video-site-91/server.log
+StandardError=append:/var/log/video-site-91/server.log
+
+# 资源限制
+MemoryMax=512M
+TasksMax=512
+
+# 安全加固
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/var/lib/video-site-91 /var/log/video-site-91
+
+[Install]
+WantedBy=multi-user.target

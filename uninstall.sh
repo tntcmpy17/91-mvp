@@ -1,9 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-#  91-MVP · 一键卸载脚本
-#  ------------------------------------------------------------------------------
-#  作用：停止并删除容器、镜像、数据（可选）
-#  注意：默认保留数据目录，如需彻底删除请加 --purge
+#  91-MVP · 一键卸载脚本（兼容 Docker + 原生双模式）
 # ==============================================================================
 
 set -e
@@ -17,54 +14,63 @@ info()  { echo -e "${YELLOW}[INFO]${NC} $*"; }
 ok()    { echo -e "${GREEN}[ OK ]${NC} $*"; }
 err()   { echo -e "${RED}[FAIL]${NC} $*"; }
 
-if [ "$EUID" -ne 0 ]; then
-  SUDO="sudo"
-else
-  SUDO=""
-fi
+if [ "$EUID" -ne 0 ]; then SUDO="sudo"; else SUDO=""; fi
 
 PURGE=0
-if [ "${1:-}" = "--purge" ]; then
-  PURGE=1
-fi
+if [ "${1:-}" = "--purge" ]; then PURGE=1; fi
 
-APP_DIR="${APP_DIR:-$HOME/video-site-91}"
 APP_NAME="video-site-91"
+APP_USER="video91"
+APP_DIR="/opt/$APP_NAME"
+APP_DATA="/var/lib/$APP_NAME"
+APP_LOG="/var/log/$APP_NAME"
 
-# 询问确认
 echo
-info "即将卸载 $APP_NAME（位置：$APP_DIR）"
+info "即将卸载 $APP_NAME"
 if [ $PURGE -eq 1 ]; then
-  err "⚠️  --purge 模式：数据目录也会被删除，无法恢复！"
+  err "--purge 模式：所有数据和用户都会被删除"
 fi
 read -p "确认继续？[y/N] " yn
 [[ "$yn" =~ ^[Yy]$ ]] || { echo "已取消"; exit 0; }
 
-# 1. 停止并删除容器
-if [ -f "$APP_DIR/docker-compose.yml" ]; then
-  info "停止并删除容器..."
+# 1. 停止 systemd 服务
+if systemctl list-unit-files | grep -q "^${APP_NAME}.service"; then
+  info "停止 systemd 服务..."
+  $SUDO systemctl stop "$APP_NAME" 2>/dev/null || true
+  $SUDO systemctl disable "$APP_NAME" 2>/dev/null || true
+  $SUDO rm -f /etc/systemd/system/${APP_NAME}.service
+  $SUDO systemctl daemon-reload
+  ok "systemd 服务已清理"
+fi
+
+# 2. 停止 Docker（如有）
+if command -v docker >/dev/null && [ -f "$APP_DIR/docker-compose.yml" ]; then
+  info "停止 Docker 容器..."
   cd "$APP_DIR"
   $SUDO docker compose down --remove-orphans 2>/dev/null || true
-else
-  info "docker-compose.yml 不存在，直接尝试通过容器名停止..."
-  $SUDO docker stop "$APP_NAME" 2>/dev/null || true
-  $SUDO docker rm "$APP_NAME" 2>/dev/null || true
+  $SUDO docker images --format "{{.Repository}}:{{.Tag}}" | \
+    grep -i "video-site-91\|91-mvp" | xargs -r $SUDO docker rmi 2>/dev/null || true
+  ok "Docker 资源已清理"
 fi
-ok "容器已清理"
 
-# 2. 删除镜像
-info "删除 Docker 镜像..."
-$SUDO docker rmi "${APP_NAME// /_}-video-site-91" 2>/dev/null || true
-$SUDO docker images --format "{{.Repository}}:{{.Tag}}" | grep -i "video-site-91\|91-mvp" | xargs -r $SUDO docker rmi 2>/dev/null || true
-ok "镜像已清理"
+# 3. 删除安装目录
+if [ -d "$APP_DIR" ]; then
+  info "删除安装目录 $APP_DIR..."
+  $SUDO rm -rf "$APP_DIR"
+fi
 
-# 3. 删除项目目录
+# 4. 处理数据和日志
 if [ $PURGE -eq 1 ]; then
-  info "彻底删除项目目录和数据..."
-  rm -rf "$APP_DIR"
-  ok "已删除 $APP_DIR"
+  info "删除数据目录..."
+  $SUDO rm -rf "$APP_DATA" "$APP_LOG"
+  if id "$APP_USER" >/dev/null 2>&1; then
+    $SUDO userdel "$APP_USER" 2>/dev/null || true
+    info "已删除用户 $APP_USER"
+  fi
+  ok "已彻底清理"
 else
-  info "保留项目目录 $APP_DIR（如需彻底删除请加 --purge）"
+  info "保留数据：$APP_DATA（如需删除请加 --purge）"
+  info "保留日志：$APP_LOG"
 fi
 
 echo
