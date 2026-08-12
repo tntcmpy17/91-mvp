@@ -17,7 +17,7 @@
 
 ```bash
 # 下载脚本
-curl -fsSL https://raw.githubusercontent.com/tntcmpy17/91-mvp/main/install.sh -o install.sh
+curl -fsSL https://raw.githubusercontent.com/tntcmpy17/91-mpv/main/install.sh -o install.sh
 chmod +x install.sh
 
 # 运行（会自动装 Docker、拉代码、构建、启动）
