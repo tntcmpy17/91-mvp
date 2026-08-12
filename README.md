@@ -13,16 +13,37 @@
 
 ## 🚀 快速开始（Docker）
 
-```bash
-# 1. 创建目录
-mkdir video-site-91 && cd video-site-91
+### 方式 1：一键脚本（推荐）
 
-# 2. 下载 docker-compose.yml
-curl -fsSL https://raw.githubusercontent.com/your-repo/91-mvp/main/docker-compose.yml -o docker-compose.yml
-# 或者手动复制本项目里的 docker-compose.yml
+```bash
+# 下载脚本
+curl -fsSL https://raw.githubusercontent.com/tntcmpy17/91-mvp/main/install.sh -o install.sh
+chmod +x install.sh
+
+# 运行（会自动装 Docker、拉代码、构建、启动）
+sudo ./install.sh
+```
+
+脚本会自动：
+- ✅ 检测系统（Debian 11+/Ubuntu 22.04+）
+- ✅ 安装 Docker 和 Docker Compose（如已装则跳过）
+- ✅ 选择获取代码方式（Git 克隆 / Release 包 / 本地目录）
+- ✅ 构建镜像并后台启动
+- ✅ 健康检查 + 打印访问地址
+
+### 方式 2：手动部署
+
+```bash
+# 1. 安装 Docker（一行脚本，详见 Debian 12 部署章节）
+
+# 2. 拉取代码（任选一种）
+git clone https://github.com/tntcmpy17/91-mvp.git
+# 或下载并解压 Release 包
+curl -fsSL https://github.com/tntcmpy17/91-mvp/releases/latest/download/91-mvp.tar.gz | tar -xz
+cd 91-mvp
 
 # 3. 启动
-docker compose up -d
+sudo docker compose up -d --build
 
 # 4. 访问
 打开 http://服务器IP:9191
@@ -104,6 +125,16 @@ curl http://localhost:9191/api/sources
 | ownCloud | `https://your-domain.com/remote.php/webdav/` |
 | 群晖 NAS | `https://nas-ip:5006/` |
 | 威联通 NAS | `https://nas-ip:8080/` |
+
+### 4. 卸载（如需要）
+
+```bash
+# 保留数据目录（下次可重新部署）
+sudo ./uninstall.sh
+
+# 彻底删除（容器 + 镜像 + 项目目录 + 数据，不可恢复）
+sudo ./uninstall.sh --purge
+```
 
 ## 📁 目录结构
 
